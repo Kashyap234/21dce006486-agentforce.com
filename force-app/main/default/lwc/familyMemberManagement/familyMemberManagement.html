@@ -1,0 +1,232 @@
+<template>
+    <lightning-card title="Family Members Management" icon-name="standard:people">
+        <div class="slds-p-around_medium">
+            
+            <!-- Primary Contact Info -->
+            <template if:true={primaryContactInfo}>
+                <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">Primary Contact</h3>
+                    <div class="slds-grid slds-wrap">
+                        <div class="slds-col slds-size_1-of-2">
+                            <strong>Name:</strong> {primaryContactInfo.name}
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <strong>Account:</strong> {primaryContactInfo.accountName}
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_small">
+                            <strong>Email:</strong> {primaryContactInfo.email}
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-m-top_small">
+                            <strong>Phone:</strong> {primaryContactInfo.phone}
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Add New Family Member Button -->
+            <div class="slds-m-bottom_medium">
+                <lightning-button 
+                    variant="brand" 
+                    label="Add Family Member" 
+                    icon-name="utility:add"
+                    onclick={handleAddMember}>
+                </lightning-button>
+            </div>
+
+            <!-- Error Message -->
+            <template if:true={errorMessage}>
+                <div class="slds-notify slds-notify_alert slds-theme_error slds-m-bottom_medium" role="alert">
+                    <h2>{errorMessage}</h2>
+                </div>
+            </template>
+
+            <!-- Loading Spinner -->
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+            </template>
+
+            <!-- Family Members List -->
+            <template if:true={hasFamilyMembers}>
+                <div class="slds-grid slds-wrap slds-gutters">
+                    <template for:each={familyMembers} for:item="member">
+                        <div key={member.id} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3">
+                            <article class="slds-card slds-m-bottom_small">
+                                <div class="slds-card__header slds-grid">
+                                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                                        <div class="slds-media__figure">
+                                            <lightning-icon icon-name="standard:contact" size="small"></lightning-icon>
+                                        </div>
+                                        <div class="slds-media__body">
+                                            <h2 class="slds-card__header-title">
+                                                <span>{member.firstName} {member.lastName}</span>
+                                            </h2>
+                                        </div>
+                                    </header>
+                                    <div class="slds-no-flex">
+                                        <lightning-button-menu 
+                                            alternative-text="Actions" 
+                                            icon-size="x-small"
+                                            menu-alignment="right"
+                                            variant="border-filled">
+                                            <lightning-menu-item 
+                                                value="edit" 
+                                                label="Edit" 
+                                                icon-name="utility:edit"
+                                                data-id={member.id}
+                                                onclick={handleEditMember}>
+                                            </lightning-menu-item>
+                                            <lightning-menu-item 
+                                                value="delete" 
+                                                label="Delete" 
+                                                icon-name="utility:delete"
+                                                data-id={member.id}
+                                                onclick={handleDeleteMember}>
+                                            </lightning-menu-item>
+                                        </lightning-button-menu>
+                                    </div>
+                                </div>
+                                <div class="slds-card__body slds-card__body_inner">
+                                    <dl class="slds-list_horizontal slds-wrap">
+                                        <dt class="slds-item_label slds-text-color_weak slds-truncate">Relationship:</dt>
+                                        <dd class="slds-item_detail slds-truncate">{member.relationship}</dd>
+                                        
+                                        <dt class="slds-item_label slds-text-color_weak slds-truncate">Email:</dt>
+                                        <dd class="slds-item_detail slds-truncate">{member.email}</dd>
+                                        
+                                        <dt class="slds-item_label slds-text-color_weak slds-truncate">Phone:</dt>
+                                        <dd class="slds-item_detail slds-truncate">{member.phone}</dd>
+                                        
+                                            <template if:true={member.birthdate}>
+                                                <dt class="slds-item_label slds-text-color_weak slds-truncate">Birth Date:</dt>
+                                                <dd class="slds-item_detail slds-truncate">
+                                                    <lightning-formatted-date-time 
+                                                        value={member.birthdate}
+                                                        year="numeric" 
+                                                        month="numeric" 
+                                                        day="numeric">
+                                                    </lightning-formatted-date-time>
+                                                </dd>
+                                            </template>
+                                        
+                                        <dt class="slds-item_label slds-text-color_weak slds-truncate">Background Check:</dt>
+                                        <dd class="slds-item_detail slds-truncate">
+                                            <lightning-badge label={member.backgroundCheckStatus}></lightning-badge>
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </article>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- No Family Members Message -->
+            <template if:false={hasFamilyMembers}>
+                <template if:false={isLoading}>
+                    <div class="slds-text-align_center slds-m-vertical_large">
+                        <lightning-icon icon-name="custom:custom19" size="large" class="slds-m-bottom_small"></lightning-icon>
+                        <p class="slds-text-heading_small">No family members added yet</p>
+                        <p class="slds-text-color_weak slds-m-top_small">Click "Add Family Member" to get started</p>
+                    </div>
+                </template>
+            </template>
+
+        </div>
+    </lightning-card>
+
+    <!-- Add/Edit Modal -->
+    <template if:true={showModal}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                            title="Close" 
+                            onclick={handleCloseModal}>
+                        <lightning-icon icon-name="utility:close" size="small" alternative-text="close"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-modal__title slds-hyphenate">{modalTitle}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-input 
+                        label="First Name" 
+                        value={currentMember.firstName} 
+                        onchange={handleFieldChange}
+                        data-field="firstName"
+                        required>
+                    </lightning-input>
+                    
+                    <lightning-input 
+                        label="Last Name" 
+                        value={currentMember.lastName} 
+                        onchange={handleFieldChange}
+                        data-field="lastName"
+                        required
+                        class="slds-m-top_small">
+                    </lightning-input>
+                    
+                    <lightning-input 
+                        label="Email" 
+                        type="email"
+                        value={currentMember.email} 
+                        onchange={handleFieldChange}
+                        data-field="email"
+                        class="slds-m-top_small">
+                    </lightning-input>
+                    
+                    <lightning-input 
+                        label="Phone" 
+                        type="tel"
+                        value={currentMember.phone} 
+                        onchange={handleFieldChange}
+                        data-field="phone"
+                        class="slds-m-top_small">
+                    </lightning-input>
+                    
+                    <lightning-input 
+                        label="Mobile Phone" 
+                        type="tel"
+                        value={currentMember.mobilePhone} 
+                        onchange={handleFieldChange}
+                        data-field="mobilePhone"
+                        class="slds-m-top_small">
+                    </lightning-input>
+                    
+                    <lightning-input 
+                        label="Birth Date" 
+                        type="date"
+                        value={currentMember.birthdate} 
+                        onchange={handleFieldChange}
+                        data-field="birthdate"
+                        class="slds-m-top_small">
+                    </lightning-input>
+                    
+                    <lightning-combobox
+                        label="Relationship to Primary"
+                        value={currentMember.relationship}
+                        placeholder="Select Relationship"
+                        options={relationshipOptions}
+                        onchange={handleFieldChange}
+                        data-field="relationship"
+                        required
+                        class="slds-m-top_small">
+                    </lightning-combobox>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button 
+                        variant="neutral" 
+                        label="Cancel" 
+                        onclick={handleCloseModal}>
+                    </lightning-button>
+                    <lightning-button 
+                        variant="brand" 
+                        label="Save" 
+                        onclick={handleSaveMember}
+                        disabled={isSaving}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

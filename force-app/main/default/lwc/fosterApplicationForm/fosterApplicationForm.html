@@ -1,0 +1,204 @@
+<template>
+    <lightning-card title="Foster Care Application" icon-name="standard:form">
+        <div class="slds-p-around_medium">
+            
+            <!-- Success Message -->
+            <template if:true={showSuccess}>
+                <div class="slds-notify slds-notify_alert slds-theme_success slds-m-bottom_medium" role="alert">
+                    <lightning-icon icon-name="utility:success" size="small" class="slds-m-right_small"></lightning-icon>
+                    <h2>Application submitted successfully! We will review and contact you soon.</h2>
+                </div>
+                <div class="slds-text-align_center slds-m-top_large">
+                    <lightning-button variant="brand" label="Submit Another Application" onclick={handleNewApplication}></lightning-button>
+                </div>
+            </template>
+
+            <!-- Multi-Step Form -->
+            <template if:false={showSuccess}>
+                
+                <!-- Progress Indicator -->
+                <div class="slds-m-bottom_large">
+                    <lightning-progress-indicator current-step={currentStep} type="path" variant="base">
+                        <lightning-progress-step label="Primary Applicant" value="step1"></lightning-progress-step>
+                        <lightning-progress-step label="Family Members" value="step2"></lightning-progress-step>
+                        <lightning-progress-step label="Household Info" value="step3"></lightning-progress-step>
+                        <lightning-progress-step label="Review & Submit" value="step4"></lightning-progress-step>
+                    </lightning-progress-indicator>
+                </div>
+
+                <!-- Step 1: Primary Applicant -->
+                <template if:true={isStep1}>
+                    <h3 class="slds-text-heading_medium slds-m-bottom_medium">Primary Applicant Information</h3>
+                    
+                    <lightning-input label="First Name" value={primaryApplicant.firstName} onchange={handlePrimaryFieldChange} data-field="firstName" required></lightning-input>
+                    <lightning-input label="Last Name" value={primaryApplicant.lastName} onchange={handlePrimaryFieldChange} data-field="lastName" required class="slds-m-top_small"></lightning-input>
+                    <lightning-input type="email" label="Email" value={primaryApplicant.email} onchange={handlePrimaryFieldChange} data-field="email" required class="slds-m-top_small"></lightning-input>
+                    <lightning-input type="tel" label="Phone" value={primaryApplicant.phone} onchange={handlePrimaryFieldChange} data-field="phone" required class="slds-m-top_small"></lightning-input>
+                    <lightning-input label="Company/Family Name" value={primaryApplicant.company} onchange={handlePrimaryFieldChange} data-field="company" class="slds-m-top_small"></lightning-input>
+                    
+                    <div class="slds-m-top_medium">
+                        <h4 class="slds-text-heading_small slds-m-bottom_small">Address</h4>
+                        <lightning-input label="Street" value={primaryApplicant.street} onchange={handlePrimaryFieldChange} data-field="street" class="slds-m-top_small"></lightning-input>
+                        <div class="slds-grid slds-wrap slds-gutters slds-m-top_small">
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                <lightning-input label="City" value={primaryApplicant.city} onchange={handlePrimaryFieldChange} data-field="city"></lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                <lightning-input label="State" value={primaryApplicant.state} onchange={handlePrimaryFieldChange} data-field="state"></lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                <lightning-input label="Postal Code" value={primaryApplicant.postalCode} onchange={handlePrimaryFieldChange} data-field="postalCode"></lightning-input>
+                            </div>
+                        </div>
+                    </div>
+
+                    <lightning-combobox label="Application Type" value={primaryApplicant.applicationType} 
+                                       placeholder="Select Type" options={applicationTypeOptions} 
+                                       onchange={handlePrimaryFieldChange} data-field="applicationType" 
+                                       required class="slds-m-top_medium"></lightning-combobox>
+                </template>
+
+                <!-- Step 2: Family Members -->
+                <template if:true={isStep2}>
+                    <h3 class="slds-text-heading_medium slds-m-bottom_medium">Family Members</h3>
+                    <p class="slds-m-bottom_medium">Add all adults living in your household (18+ years old)</p>
+
+                    <!-- Family Members List -->
+                    <template if:true={hasFamilyMembers}>
+                        <template for:each={familyMembers} for:item="member" for:index="index">
+                            <div key={member.tempId} class="slds-box slds-m-bottom_small">
+                                <div class="slds-grid slds-grid_align-spread">
+                                    <div class="slds-col">
+                                        <strong>{member.firstName} {member.lastName}</strong>
+                                        <div class="slds-text-body_small slds-text-color_weak">
+                                            {member.relationship} • {member.email}
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-no-flex">
+                                        <lightning-button-icon icon-name="utility:delete" variant="bare" 
+                                                             alternative-text="Remove" 
+                                                             data-index={index}
+                                                             onclick={handleRemoveMember}></lightning-button-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+
+                    <!-- Add Family Member Form -->
+                    <div class="slds-box slds-theme_shade slds-m-top_medium">
+                        <h4 class="slds-text-heading_small slds-m-bottom_small">Add Family Member</h4>
+                        
+                        <lightning-input label="First Name" value={currentMember.firstName} onchange={handleMemberFieldChange} data-field="firstName"></lightning-input>
+                        <lightning-input label="Last Name" value={currentMember.lastName} onchange={handleMemberFieldChange} data-field="lastName" class="slds-m-top_small"></lightning-input>
+                        <lightning-input type="email" label="Email" value={currentMember.email} onchange={handleMemberFieldChange} data-field="email" class="slds-m-top_small"></lightning-input>
+                        <lightning-input type="tel" label="Phone" value={currentMember.phone} onchange={handleMemberFieldChange} data-field="phone" class="slds-m-top_small"></lightning-input>
+                        <lightning-input type="date" label="Birth Date" value={currentMember.birthdate} onchange={handleMemberFieldChange} data-field="birthdate" class="slds-m-top_small"></lightning-input>
+                        
+                        <lightning-combobox label="Relationship" value={currentMember.relationship} 
+                                           placeholder="Select Relationship" options={relationshipOptions} 
+                                           onchange={handleMemberFieldChange} data-field="relationship" 
+                                           class="slds-m-top_small"></lightning-combobox>
+                        
+                        <div class="slds-m-top_medium">
+                            <h5 class="slds-text-heading_small slds-m-bottom_small">Employment (Optional)</h5>
+                            <lightning-input label="Employer Name" value={currentMember.employerName} onchange={handleMemberFieldChange} data-field="employerName"></lightning-input>
+                            <lightning-input label="Job Title" value={currentMember.jobTitle} onchange={handleMemberFieldChange} data-field="jobTitle" class="slds-m-top_small"></lightning-input>
+                            <lightning-input type="number" label="Monthly Income" value={currentMember.monthlyIncome} onchange={handleMemberFieldChange} data-field="monthlyIncome" class="slds-m-top_small" formatter="currency"></lightning-input>
+                        </div>
+
+                        <div class="slds-m-top_medium">
+                            <lightning-button variant="brand" label="Add to Family" onclick={handleAddFamilyMember}></lightning-button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Step 3: Household Information -->
+                <template if:true={isStep3}>
+                    <h3 class="slds-text-heading_medium slds-m-bottom_medium">Household Information</h3>
+
+                    <lightning-combobox label="Home Type" value={householdInfo.homeType} 
+                                       placeholder="Select Type" options={homeTypeOptions} 
+                                       onchange={handleHouseholdFieldChange} data-field="homeType" 
+                                       class="slds-m-bottom_small"></lightning-combobox>
+
+                    <lightning-input type="number" label="Number of Bedrooms" value={householdInfo.bedrooms} 
+                                    onchange={handleHouseholdFieldChange} data-field="bedrooms" 
+                                    class="slds-m-bottom_small"></lightning-input>
+
+                    <lightning-input type="number" label="Square Footage" value={householdInfo.squareFootage} 
+                                    onchange={handleHouseholdFieldChange} data-field="squareFootage" 
+                                    class="slds-m-bottom_small"></lightning-input>
+
+                    <lightning-input type="checkbox" label="Has Pool" checked={householdInfo.hasPool} 
+                                    onchange={handleHouseholdFieldChange} data-field="hasPool" 
+                                    class="slds-m-bottom_small"></lightning-input>
+
+                    <lightning-input type="checkbox" label="Has Pets" checked={householdInfo.hasPets} 
+                                    onchange={handleHouseholdFieldChange} data-field="hasPets" 
+                                    class="slds-m-bottom_small"></lightning-input>
+
+                    <template if:true={householdInfo.hasPets}>
+                        <lightning-textarea label="Pet Details" value={householdInfo.petDetails} 
+                                          onchange={handleHouseholdFieldChange} data-field="petDetails" 
+                                          class="slds-m-bottom_small"></lightning-textarea>
+                    </template>
+
+                    <lightning-input type="checkbox" label="Smoking Household" checked={householdInfo.smoking} 
+                                    onchange={handleHouseholdFieldChange} data-field="smoking" 
+                                    class="slds-m-bottom_small"></lightning-input>
+                </template>
+
+                <!-- Step 4: Review -->
+                <template if:true={isStep4}>
+                    <h3 class="slds-text-heading_medium slds-m-bottom_medium">Review Your Application</h3>
+
+                    <div class="slds-box slds-m-bottom_medium">
+                        <h4 class="slds-text-heading_small slds-m-bottom_small">Primary Applicant</h4>
+                        <p><strong>Name:</strong> {primaryApplicant.firstName} {primaryApplicant.lastName}</p>
+                        <p><strong>Email:</strong> {primaryApplicant.email}</p>
+                        <p><strong>Phone:</strong> {primaryApplicant.phone}</p>
+                        <p><strong>Type:</strong> {primaryApplicant.applicationType}</p>
+                    </div>
+
+                    <div class="slds-box slds-m-bottom_medium">
+                        <h4 class="slds-text-heading_small slds-m-bottom_small">Family Members ({familyMembers.length})</h4>
+                        <template for:each={familyMembers} for:item="member">
+                            <p key={member.tempId}>• {member.firstName} {member.lastName} ({member.relationship})</p>
+                        </template>
+                    </div>
+
+                    <div class="slds-box">
+                        <h4 class="slds-text-heading_small slds-m-bottom_small">Household</h4>
+                        <p><strong>Home Type:</strong> {householdInfo.homeType}</p>
+                        <p><strong>Bedrooms:</strong> {householdInfo.bedrooms}</p>
+                        <p><strong>Has Pets:</strong> {householdInfo.hasPetsLabel}</p>
+                    </div>
+                </template>
+
+                <!-- Error Message -->
+                <template if:true={errorMessage}>
+                    <div class="slds-notify slds-notify_alert slds-theme_error slds-m-top_medium" role="alert">
+                        <h2>{errorMessage}</h2>
+                    </div>
+                </template>
+
+                <!-- Navigation Buttons -->
+                <div class="slds-m-top_large slds-text-align_center">
+                    <template if:false={isStep1}>
+                        <lightning-button variant="neutral" label="Previous" onclick={handlePrevious} class="slds-m-right_small"></lightning-button>
+                    </template>
+                    
+                    <template if:false={isStep4}>
+                        <lightning-button variant="brand" label="Next" onclick={handleNext}></lightning-button>
+                    </template>
+                    
+                    <template if:true={isStep4}>
+                        <lightning-button variant="brand" label="Submit Application" onclick={handleFinalSubmit} disabled={isSubmitting}></lightning-button>
+                    </template>
+                </div>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>

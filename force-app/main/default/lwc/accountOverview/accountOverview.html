@@ -1,0 +1,255 @@
+<template>
+    <lightning-card title="Family Account Overview" icon-name="standard:account">
+        <div class="slds-p-around_medium">
+            
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </template>
+
+            <template if:true={accountOverview}>
+                
+                <!-- Account Summary -->
+                <div class="slds-grid slds-wrap slds-gutters slds-m-bottom_large">
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                        <article class="slds-card">
+                            <div class="slds-card__header slds-grid">
+                                <header class="slds-media slds-media_center">
+                                    <div class="slds-media__figure">
+                                        <lightning-icon icon-name="standard:account" size="small"></lightning-icon>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <h2 class="slds-card__header-title">Account Information</h2>
+                                    </div>
+                                </header>
+                            </div>
+                            <div class="slds-card__body slds-card__body_inner">
+                                <dl class="slds-list_horizontal slds-wrap">
+                                    <dt class="slds-item_label">Name:</dt>
+                                    <dd class="slds-item_detail"><strong>{accountOverview.accountName}</strong></dd>
+                                    
+                                    <dt class="slds-item_label">Phone:</dt>
+                                    <dd class="slds-item_detail">{accountOverview.accountPhone}</dd>
+                                    
+                                    <dt class="slds-item_label">Address:</dt>
+                                    <dd class="slds-item_detail">{accountOverview.accountAddress}</dd>
+                                </dl>
+                            </div>
+                        </article>
+                    </div>
+
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                        <article class="slds-card">
+                            <div class="slds-card__header slds-grid">
+                                <header class="slds-media slds-media_center">
+                                    <div class="slds-media__figure">
+                                        <lightning-icon icon-name="standard:contact" size="small"></lightning-icon>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <h2 class="slds-card__header-title">Assigned Caseworker</h2>
+                                    </div>
+                                </header>
+                            </div>
+                            <div class="slds-card__body slds-card__body_inner">
+                                <template if:true={accountOverview.primaryCaseworkerName}>
+                                    <dl class="slds-list_horizontal slds-wrap">
+                                        <dt class="slds-item_label">Name:</dt>
+                                        <dd class="slds-item_detail"><strong>{accountOverview.primaryCaseworkerName}</strong></dd>
+                                        
+                                        <dt class="slds-item_label">Email:</dt>
+                                        <dd class="slds-item_detail">{accountOverview.primaryCaseworkerEmail}</dd>
+                                        
+                                        <dt class="slds-item_label">Phone:</dt>
+                                        <dd class="slds-item_detail">{accountOverview.primaryCaseworkerPhone}</dd>
+                                    </dl>
+                                </template>
+                                <template if:false={accountOverview.primaryCaseworkerName}>
+                                    <p class="slds-text-color_weak">No caseworker assigned</p>
+                                </template>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="slds-grid slds-wrap slds-gutters_small slds-m-bottom_large">
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                        <div class="slds-box slds-theme_default slds-text-align_center">
+                            <div class="slds-text-heading_large">{accountOverview.totalFamilyMembers}</div>
+                            <div class="slds-text-body_small slds-text-color_weak">Total Family Members</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                        <div class="slds-box slds-theme_default slds-text-align_center">
+                            <div class="slds-text-heading_large">{accountOverview.primaryContacts}</div>
+                            <div class="slds-text-body_small slds-text-color_weak">Primary Contacts</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                        <div class="slds-box slds-theme_default slds-text-align_center">
+                            <div class="slds-text-heading_large">{accountOverview.caregiverMembers}</div>
+                            <div class="slds-text-body_small slds-text-color_weak">Caregiver Members</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Family Members List -->
+                <h3 class="slds-text-heading_medium slds-m-bottom_small">Family Members</h3>
+                <template if:true={accountOverview.contacts}>
+                    <template for:each={accountOverview.contacts} for:item="contact">
+                        <article key={contact.contactId} class="slds-card slds-m-bottom_small">
+                            <div class="slds-card__header slds-grid">
+                                <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                                    <div class="slds-media__figure">
+                                        <lightning-icon 
+                                            icon-name={contact.iconName} 
+                                            size="small">
+                                        </lightning-icon>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <h2 class="slds-card__header-title">
+                                            <a href={contact.contactLink} class="slds-card__header-link">
+                                                <span>{contact.name}</span>
+                                            </a>
+                                        </h2>
+                                        <p class="slds-text-body_small slds-text-color_weak">
+                                            {contact.recordType}
+                                            <template if:true={contact.familyRole}>
+                                                • {contact.familyRole}
+                                            </template>
+                                        </p>
+                                    </div>
+                                </header>
+                            </div>
+                            <div class="slds-card__body slds-card__body_inner">
+                                <div class="slds-grid slds-wrap slds-gutters_small">
+                                    <!-- Contact Info Column -->
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                        <h4 class="slds-text-heading_small slds-m-bottom_x-small">Contact Info</h4>
+                                        <dl class="slds-list_horizontal slds-wrap">
+                                            <dt class="slds-item_label">Email:</dt>
+                                            <dd class="slds-item_detail">{contact.email}</dd>
+                                            
+                                            <dt class="slds-item_label">Phone:</dt>
+                                            <dd class="slds-item_detail">{contact.phone}</dd>
+                                            
+                                            <template if:true={contact.relationshipToPrimary}>
+                                                <dt class="slds-item_label">Relationship:</dt>
+                                                <dd class="slds-item_detail">{contact.relationshipToPrimary}</dd>
+                                            </template>
+                                        </dl>
+                                    </div>
+
+                                    <!-- Status Column -->
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                        <h4 class="slds-text-heading_small slds-m-bottom_x-small">Status</h4>
+                                        <dl class="slds-list_horizontal slds-wrap">
+                                            <dt class="slds-item_label">Background Check:</dt>
+                                            <dd class="slds-item_detail">
+                                                <lightning-badge label={contact.backgroundCheckStatus}></lightning-badge>
+                                            </dd>
+                                            
+                                            <dt class="slds-item_label">Training:</dt>
+                                            <dd class="slds-item_detail">
+                                                <lightning-icon 
+                                                    icon-name={contact.trainingIcon} 
+                                                    size="x-small">
+                                                </lightning-icon>
+                                            </dd>
+                                            
+                                            <dt class="slds-item_label">Home Study:</dt>
+                                            <dd class="slds-item_detail">
+                                                <lightning-icon 
+                                                    icon-name={contact.homeStudyIcon} 
+                                                    size="x-small">
+                                                </lightning-icon>
+                                            </dd>
+                                        </dl>
+                                    </div>
+
+                                    <!-- Employment Column -->
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                        <h4 class="slds-text-heading_small slds-m-bottom_x-small">Employment</h4>
+                                        <template if:true={contact.currentEmployer}>
+                                            <dl class="slds-list_horizontal slds-wrap">
+                                                <dt class="slds-item_label">Employer:</dt>
+                                                <dd class="slds-item_detail">{contact.currentEmployer}</dd>
+                                                
+                                                <dt class="slds-item_label">Position:</dt>
+                                                <dd class="slds-item_detail">{contact.currentJobTitle}</dd>
+                                                
+                                                <dt class="slds-item_label">Status:</dt>
+                                                <dd class="slds-item_detail">{contact.employmentStatus}</dd>
+                                            </dl>
+                                        </template>
+                                        <template if:false={contact.currentEmployer}>
+                                            <p class="slds-text-color_weak slds-text-body_small">No employment info</p>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
+                    </template>
+                </template>
+
+                <!-- Household Information -->
+                <template if:true={accountOverview.householdInfo}>
+                    <h3 class="slds-text-heading_medium slds-m-top_large slds-m-bottom_small">Household Information</h3>
+                    <article class="slds-card">
+                        <div class="slds-card__body slds-card__body_inner">
+                            <div class="slds-grid slds-wrap slds-gutters">
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                    <dl class="slds-list_horizontal slds-wrap">
+                                        <dt class="slds-item_label">Home Type:</dt>
+                                        <dd class="slds-item_detail">{accountOverview.householdInfo.homeType}</dd>
+                                        
+                                        <dt class="slds-item_label">Bedrooms:</dt>
+                                        <dd class="slds-item_detail">{accountOverview.householdInfo.numberOfBedrooms}</dd>
+                                        
+                                        <dt class="slds-item_label">Square Footage:</dt>
+                                        <dd class="slds-item_detail">{accountOverview.householdInfo.squareFootage} sq ft</dd>
+                                        
+                                        <dt class="slds-item_label">Has Pool:</dt>
+                                        <dd class="slds-item_detail">
+                                            <template if:true={accountOverview.householdInfo.hasPool}>Yes</template>
+                                            <template if:false={accountOverview.householdInfo.hasPool}>No</template>
+                                        </dd>
+                                    </dl>
+                                </div>
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                    <dl class="slds-list_horizontal slds-wrap">
+                                        <dt class="slds-item_label">Has Pets:</dt>
+                                        <dd class="slds-item_detail">
+                                            <template if:true={accountOverview.householdInfo.hasPets}>Yes</template>
+                                            <template if:false={accountOverview.householdInfo.hasPets}>No</template>
+                                        </dd>
+                                        
+                                        <dt class="slds-item_label">Children in Home:</dt>
+                                        <dd class="slds-item_detail">{accountOverview.householdInfo.numberOfChildrenInHome}</dd>
+                                        
+                                        <dt class="slds-item_label">Home Safety Verified:</dt>
+                                        <dd class="slds-item_detail">
+                                            <lightning-icon 
+                                                icon-name={householdSafetyIcon} 
+                                                size="x-small">
+                                            </lightning-icon>
+                                        </dd>
+                                        
+                                        <dt class="slds-item_label">Total Household Income:</dt>
+                                        <dd class="slds-item_detail">
+                                            <lightning-formatted-number 
+                                                value={accountOverview.householdInfo.totalHouseholdIncome} 
+                                                format-style="currency" 
+                                                currency-code="USD">
+                                            </lightning-formatted-number>
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </template>
+
+            </template>
+        </div>
+    </lightning-card>
+</template>
