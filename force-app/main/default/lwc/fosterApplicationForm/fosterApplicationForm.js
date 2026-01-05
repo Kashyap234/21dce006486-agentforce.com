@@ -56,6 +56,11 @@ export default class EnhancedFosterApplicationForm extends LightningElement {
         { label: 'Other', value: 'Other' }
     ];
 
+    // Check if applicant is a caseworker
+    get isCaseworker() {
+        return this.primaryApplicant.applicationType === 'Caseworker';
+    }
+
     // Step checks
     get isStep1() { return this.currentStep === 'step1'; }
     get isStep2() { return this.currentStep === 'step2'; }
@@ -75,7 +80,13 @@ export default class EnhancedFosterApplicationForm extends LightningElement {
      */
     handlePrimaryFieldChange(event) {
         const field = event.currentTarget.dataset.field;
+        const oldType = this.primaryApplicant.applicationType;
         this.primaryApplicant[field] = event.target.value;
+        
+        // If application type changed, reset to step 1
+        if (field === 'applicationType' && oldType !== event.target.value) {
+            this.currentStep = 'step1';
+        }
     }
 
     /**
@@ -134,7 +145,13 @@ export default class EnhancedFosterApplicationForm extends LightningElement {
             if (!this.validateStep1()) {
                 return;
             }
-            this.currentStep = 'step2';
+            
+            // If caseworker, skip to review step (step4)
+            if (this.isCaseworker) {
+                this.currentStep = 'step4';
+            } else {
+                this.currentStep = 'step2';
+            }
         } else if (this.currentStep === 'step2') {
             this.currentStep = 'step3';
         } else if (this.currentStep === 'step3') {
@@ -150,7 +167,12 @@ export default class EnhancedFosterApplicationForm extends LightningElement {
      */
     handlePrevious() {
         if (this.currentStep === 'step4') {
-            this.currentStep = 'step3';
+            // If caseworker, go back to step1
+            if (this.isCaseworker) {
+                this.currentStep = 'step1';
+            } else {
+                this.currentStep = 'step3';
+            }
         } else if (this.currentStep === 'step3') {
             this.currentStep = 'step2';
         } else if (this.currentStep === 'step2') {
@@ -184,8 +206,9 @@ export default class EnhancedFosterApplicationForm extends LightningElement {
         try {
             const applicationData = {
                 primaryApplicant: this.primaryApplicant,
-                familyMembers: this.familyMembers,
-                householdInfo: this.householdInfo
+                // Only include family members and household info for Foster Parents
+                familyMembers: this.isCaseworker ? [] : this.familyMembers,
+                householdInfo: this.isCaseworker ? {} : this.householdInfo
             };
 
             await submitApplication({ applicationDataJson: JSON.stringify(applicationData) });

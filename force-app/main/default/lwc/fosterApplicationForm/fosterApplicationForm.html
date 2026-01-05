@@ -16,49 +16,79 @@
             <!-- Multi-Step Form -->
             <template if:false={showSuccess}>
                 
-                <!-- Progress Indicator -->
+                <!-- Progress Indicator - Conditional based on Application Type -->
                 <div class="slds-m-bottom_large">
-                    <lightning-progress-indicator current-step={currentStep} type="path" variant="base">
-                        <lightning-progress-step label="Primary Applicant" value="step1"></lightning-progress-step>
-                        <lightning-progress-step label="Family Members" value="step2"></lightning-progress-step>
-                        <lightning-progress-step label="Household Info" value="step3"></lightning-progress-step>
-                        <lightning-progress-step label="Review & Submit" value="step4"></lightning-progress-step>
-                    </lightning-progress-indicator>
+                    <template if:false={isCaseworker}>
+                        <!-- Full progress for Foster Parents -->
+                        <lightning-progress-indicator current-step={currentStep} type="path" variant="base">
+                            <lightning-progress-step label="Primary Applicant" value="step1"></lightning-progress-step>
+                            <lightning-progress-step label="Family Members" value="step2"></lightning-progress-step>
+                            <lightning-progress-step label="Household Info" value="step3"></lightning-progress-step>
+                            <lightning-progress-step label="Review & Submit" value="step4"></lightning-progress-step>
+                        </lightning-progress-indicator>
+                    </template>
+                    
+                    <template if:true={isCaseworker}>
+                        <!-- Simplified progress for Caseworkers -->
+                        <lightning-progress-indicator current-step={currentStep} type="path" variant="base">
+                            <lightning-progress-step label="Applicant Information" value="step1"></lightning-progress-step>
+                            <lightning-progress-step label="Review & Submit" value="step4"></lightning-progress-step>
+                        </lightning-progress-indicator>
+                    </template>
                 </div>
 
                 <!-- Step 1: Primary Applicant -->
                 <template if:true={isStep1}>
-                    <h3 class="slds-text-heading_medium slds-m-bottom_medium">Primary Applicant Information</h3>
+                    <h3 class="slds-text-heading_medium slds-m-bottom_medium">
+                        <template if:true={isCaseworker}>Caseworker Application</template>
+                        <template if:false={isCaseworker}>Primary Applicant Information</template>
+                    </h3>
                     
-                    <lightning-input label="First Name" value={primaryApplicant.firstName} onchange={handlePrimaryFieldChange} data-field="firstName" required></lightning-input>
-                    <lightning-input label="Last Name" value={primaryApplicant.lastName} onchange={handlePrimaryFieldChange} data-field="lastName" required class="slds-m-top_small"></lightning-input>
-                    <lightning-input type="email" label="Email" value={primaryApplicant.email} onchange={handlePrimaryFieldChange} data-field="email" required class="slds-m-top_small"></lightning-input>
-                    <lightning-input type="tel" label="Phone" value={primaryApplicant.phone} onchange={handlePrimaryFieldChange} data-field="phone" required class="slds-m-top_small"></lightning-input>
-                    <lightning-input label="Company/Family Name" value={primaryApplicant.company} onchange={handlePrimaryFieldChange} data-field="company" class="slds-m-top_small"></lightning-input>
-                    
-                    <div class="slds-m-top_medium">
-                        <h4 class="slds-text-heading_small slds-m-bottom_small">Address</h4>
-                        <lightning-input label="Street" value={primaryApplicant.street} onchange={handlePrimaryFieldChange} data-field="street" class="slds-m-top_small"></lightning-input>
-                        <div class="slds-grid slds-wrap slds-gutters slds-m-top_small">
-                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
-                                <lightning-input label="City" value={primaryApplicant.city} onchange={handlePrimaryFieldChange} data-field="city"></lightning-input>
-                            </div>
-                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
-                                <lightning-input label="State" value={primaryApplicant.state} onchange={handlePrimaryFieldChange} data-field="state"></lightning-input>
-                            </div>
-                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
-                                <lightning-input label="Postal Code" value={primaryApplicant.postalCode} onchange={handlePrimaryFieldChange} data-field="postalCode"></lightning-input>
-                            </div>
-                        </div>
-                    </div>
-
                     <lightning-combobox label="Application Type" value={primaryApplicant.applicationType} 
                                        placeholder="Select Type" options={applicationTypeOptions} 
                                        onchange={handlePrimaryFieldChange} data-field="applicationType" 
-                                       required class="slds-m-top_medium"></lightning-combobox>
+                                       required class="slds-m-bottom_medium"></lightning-combobox>
+                    
+                    <template if:true={primaryApplicant.applicationType}>
+                        <lightning-input label="First Name" value={primaryApplicant.firstName} onchange={handlePrimaryFieldChange} data-field="firstName" required></lightning-input>
+                        <lightning-input label="Last Name" value={primaryApplicant.lastName} onchange={handlePrimaryFieldChange} data-field="lastName" required class="slds-m-top_small"></lightning-input>
+                        <lightning-input type="email" label="Email" value={primaryApplicant.email} onchange={handlePrimaryFieldChange} data-field="email" required class="slds-m-top_small"></lightning-input>
+                        <lightning-input type="tel" label="Phone" value={primaryApplicant.phone} onchange={handlePrimaryFieldChange} data-field="phone" required class="slds-m-top_small"></lightning-input>
+                        
+                        <!-- Show address fields only for Foster Parents -->
+                        <template if:false={isCaseworker}>
+                            <lightning-input label="Company/Family Name" value={primaryApplicant.company} onchange={handlePrimaryFieldChange} data-field="company" class="slds-m-top_small"></lightning-input>
+                            
+                            <div class="slds-m-top_medium">
+                                <h4 class="slds-text-heading_small slds-m-bottom_small">Address</h4>
+                                <lightning-input label="Street" value={primaryApplicant.street} onchange={handlePrimaryFieldChange} data-field="street" class="slds-m-top_small"></lightning-input>
+                                <div class="slds-grid slds-wrap slds-gutters slds-m-top_small">
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                        <lightning-input label="City" value={primaryApplicant.city} onchange={handlePrimaryFieldChange} data-field="city"></lightning-input>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                        <lightning-input label="State" value={primaryApplicant.state} onchange={handlePrimaryFieldChange} data-field="state"></lightning-input>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                        <lightning-input label="Postal Code" value={primaryApplicant.postalCode} onchange={handlePrimaryFieldChange} data-field="postalCode"></lightning-input>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        
+                        <!-- Simplified info message for Caseworkers -->
+                        <template if:true={isCaseworker}>
+                            <div class="slds-box slds-theme_info slds-m-top_medium">
+                                <p class="slds-text-body_small">
+                                    <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                    As a caseworker applicant, you only need to provide your basic contact information. Additional details will be collected during the onboarding process.
+                                </p>
+                            </div>
+                        </template>
+                    </template>
                 </template>
 
-                <!-- Step 2: Family Members -->
+                <!-- Step 2: Family Members (Only for Foster Parents) -->
                 <template if:true={isStep2}>
                     <h3 class="slds-text-heading_medium slds-m-bottom_medium">Family Members</h3>
                     <p class="slds-m-bottom_medium">Add all adults living in your household (18+ years old)</p>
@@ -113,7 +143,7 @@
                     </div>
                 </template>
 
-                <!-- Step 3: Household Information -->
+                <!-- Step 3: Household Information (Only for Foster Parents) -->
                 <template if:true={isStep3}>
                     <h3 class="slds-text-heading_medium slds-m-bottom_medium">Household Information</h3>
 
@@ -154,26 +184,58 @@
                     <h3 class="slds-text-heading_medium slds-m-bottom_medium">Review Your Application</h3>
 
                     <div class="slds-box slds-m-bottom_medium">
-                        <h4 class="slds-text-heading_small slds-m-bottom_small">Primary Applicant</h4>
+                        <h4 class="slds-text-heading_small slds-m-bottom_small">
+                            <template if:true={isCaseworker}>Caseworker Information</template>
+                            <template if:false={isCaseworker}>Primary Applicant</template>
+                        </h4>
                         <p><strong>Name:</strong> {primaryApplicant.firstName} {primaryApplicant.lastName}</p>
                         <p><strong>Email:</strong> {primaryApplicant.email}</p>
                         <p><strong>Phone:</strong> {primaryApplicant.phone}</p>
                         <p><strong>Type:</strong> {primaryApplicant.applicationType}</p>
-                    </div>
-
-                    <div class="slds-box slds-m-bottom_medium">
-                        <h4 class="slds-text-heading_small slds-m-bottom_small">Family Members ({familyMembers.length})</h4>
-                        <template for:each={familyMembers} for:item="member">
-                            <p key={member.tempId}>• {member.firstName} {member.lastName} ({member.relationship})</p>
+                        
+                        <template if:false={isCaseworker}>
+                            <template if:true={primaryApplicant.street}>
+                                <p><strong>Address:</strong> {primaryApplicant.street}, {primaryApplicant.city}, {primaryApplicant.state} {primaryApplicant.postalCode}</p>
+                            </template>
                         </template>
                     </div>
 
-                    <div class="slds-box">
-                        <h4 class="slds-text-heading_small slds-m-bottom_small">Household</h4>
-                        <p><strong>Home Type:</strong> {householdInfo.homeType}</p>
-                        <p><strong>Bedrooms:</strong> {householdInfo.bedrooms}</p>
-                        <p><strong>Has Pets:</strong> {householdInfo.hasPetsLabel}</p>
-                    </div>
+                    <!-- Only show family and household info for Foster Parents -->
+                    <template if:false={isCaseworker}>
+                        <div class="slds-box slds-m-bottom_medium">
+                            <h4 class="slds-text-heading_small slds-m-bottom_small">Family Members ({familyMembers.length})</h4>
+                            <template if:true={hasFamilyMembers}>
+                                <template for:each={familyMembers} for:item="member">
+                                    <p key={member.tempId}>• {member.firstName} {member.lastName} ({member.relationship})</p>
+                                </template>
+                            </template>
+                            <template if:false={hasFamilyMembers}>
+                                <p class="slds-text-color_weak">No family members added</p>
+                            </template>
+                        </div>
+
+                        <div class="slds-box">
+                            <h4 class="slds-text-heading_small slds-m-bottom_small">Household</h4>
+                            <template if:true={householdInfo.homeType}>
+                                <p><strong>Home Type:</strong> {householdInfo.homeType}</p>
+                                <p><strong>Bedrooms:</strong> {householdInfo.bedrooms}</p>
+                                <p><strong>Has Pets:</strong> {householdInfo_hasPetsLabel}</p>
+                            </template>
+                            <template if:false={householdInfo.homeType}>
+                                <p class="slds-text-color_weak">No household information provided</p>
+                            </template>
+                        </div>
+                    </template>
+                    
+                    <!-- Info message for Caseworkers -->
+                    <template if:true={isCaseworker}>
+                        <div class="slds-box slds-theme_info">
+                            <p class="slds-text-body_small">
+                                <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                Additional professional details and background information will be collected during the onboarding process.
+                            </p>
+                        </div>
+                    </template>
                 </template>
 
                 <!-- Error Message -->
