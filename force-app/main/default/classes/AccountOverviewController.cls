@@ -32,6 +32,7 @@ public with sharing class AccountOverviewController {
                                      (acc.BillingPostalCode != null ? acc.BillingPostalCode : '');
             
             if (acc.Primary_Caseworker__c != null) {
+                overview.primaryCaseworkerId = acc.Primary_Caseworker__c;
                 overview.primaryCaseworkerName = acc.Primary_Caseworker__r.Name;
                 overview.primaryCaseworkerEmail = acc.Primary_Caseworker__r.Email;
                 overview.primaryCaseworkerPhone = acc.Primary_Caseworker__r.Phone;
@@ -124,6 +125,43 @@ public with sharing class AccountOverviewController {
     }
     
     /**
+     * Assign or reassign caseworker to an account
+     */
+    @AuraEnabled
+    public static Boolean assignCaseworkerToAccount(Id accountId, Id caseworkerId) {
+        try {
+            // Get the account
+            Account acc = [SELECT Id, Primary_Caseworker__c FROM Account WHERE Id = :accountId LIMIT 1];
+            
+            Id oldCaseworkerId = acc.Primary_Caseworker__c;
+            
+            // Validate that the new caseworker is actually a caseworker
+            Id caseworkerRecordTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByDeveloperName()
+                                       .get('Caseworker').getRecordTypeId();
+            
+            Contact caseworker = [SELECT Id, RecordTypeId FROM Contact 
+                                 WHERE Id = :caseworkerId AND RecordTypeId = :caseworkerRecordTypeId 
+                                 LIMIT 1];
+            
+            if (caseworker == null) {
+                throw new AuraHandledException('Selected contact is not a caseworker');
+            }
+            
+            // Update account
+            acc.Primary_Caseworker__c = caseworkerId;
+            update acc;
+            
+            // Update caseworker workload
+            CaseworkerAssignmentService.reassignCaseworker(oldCaseworkerId, caseworkerId);
+            
+            return true;
+            
+        } catch (Exception e) {
+            throw new AuraHandledException('Error assigning caseworker: ' + e.getMessage());
+        }
+    }
+    
+    /**
      * Get contact details with employment history
      */
     @AuraEnabled(cacheable=true)
@@ -166,6 +204,7 @@ public with sharing class AccountOverviewController {
         @AuraEnabled public String accountName;
         @AuraEnabled public String accountPhone;
         @AuraEnabled public String accountAddress;
+        @AuraEnabled public String primaryCaseworkerId;
         @AuraEnabled public String primaryCaseworkerName;
         @AuraEnabled public String primaryCaseworkerEmail;
         @AuraEnabled public String primaryCaseworkerPhone;

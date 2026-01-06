@@ -2,7 +2,8 @@
  * Class: LeadConversionHandler
  * Purpose: Handle automatic Lead conversion when status changes to "Eligible for Foster"
  * Features: 
- * - Converts Lead to Account and Contact
+ * - Converts Lead to Account and Contact (Foster Parents)
+ * - Converts Lead to Contact only (Caseworkers)
  * - Sets appropriate Contact Record Type based on Application Type
  * - Assigns Caseworker automatically if Application Type is for foster family
  */
@@ -13,6 +14,7 @@ public class LeadConversionHandler {
      */
     public static void handleLeadConversion(List<Lead> newLeads, Map<Id, Lead> oldLeadMap) {
         List<Id> leadsToConvert = new List<Id>();
+        List<Id> caseworkerLeads = new List<Id>();
         
         for (Lead lead : newLeads) {
             Lead oldLead = oldLeadMap.get(lead.Id);
@@ -21,18 +23,75 @@ public class LeadConversionHandler {
             if (lead.Application_Status__c == 'Eligible for Foster' && 
                 oldLead.Application_Status__c != 'Eligible for Foster' &&
                 !lead.IsConverted) {
-                leadsToConvert.add(lead.Id);
+                
+                if (lead.Application_Type__c == 'Caseworker') {
+                    caseworkerLeads.add(lead.Id);
+                } else {
+                    leadsToConvert.add(lead.Id);
+                }
             }
         }
         
-        // Call future method for conversion (DML on Lead requires future context)
+        // Call future methods for conversion
         if (!leadsToConvert.isEmpty()) {
             convertLeadsToAccountContactFuture(leadsToConvert);
+        }
+        
+        if (!caseworkerLeads.isEmpty()) {
+            convertCaseworkerLeadsFuture(caseworkerLeads);
         }
     }
     
     /**
-     * Future method to handle Lead conversion asynchronously
+     * Future method to handle Caseworker Lead conversion (Contact only, no Account)
+     */
+    @future
+    public static void convertCaseworkerLeadsFuture(List<Id> leadIds) {
+        List<Lead> leads = [
+            SELECT Id, FirstName, LastName, Company, Email, Phone, 
+                   MobilePhone, Street, City, State, PostalCode, Country,
+                   Application_Type__c, Background_Check_Status__c, Description
+            FROM Lead 
+            WHERE Id IN :leadIds AND IsConverted = false
+        ];
+        
+        for (Lead lead : leads) {
+            try {
+                // Get Caseworker Record Type
+                Id caseworkerRecordTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByDeveloperName()
+                                          .get('Caseworker').getRecordTypeId();
+                
+                // Create Contact directly without Account
+                Contact caseworkerContact = new Contact(
+                    FirstName = lead.FirstName,
+                    LastName = lead.LastName,
+                    Email = lead.Email,
+                    Phone = lead.Phone,
+                    MobilePhone = lead.MobilePhone,
+                    RecordTypeId = caseworkerRecordTypeId,
+                    Availability_Status__c = 'Available',
+                    Current_Case_Load__c = 0,
+                    Maximum_Case_Load__c = 10
+                    // Note: No Family_Role__c field set for Caseworkers
+                );
+                
+                insert caseworkerContact;
+                
+                // Mark Lead as converted manually
+                lead.Status = 'Closed - Converted';
+                lead.IsConverted = true;
+                update lead;
+                
+                System.debug('Successfully created Caseworker Contact: ' + caseworkerContact.Id);
+                
+            } catch (Exception e) {
+                System.debug('Error creating Caseworker Contact: ' + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Future method to handle Lead conversion asynchronously (Foster Parents)
      */
     @future
     public static void convertLeadsToAccountContactFuture(List<Id> leadIds) {
@@ -95,16 +154,9 @@ public class LeadConversionHandler {
      */
     private static void updateContactAfterConversion(Id contactId, Id accountId, String applicationType, String leadDescription) {
         try {
-            Id recordTypeId;
-            
-            // Determine Record Type based on Application Type
-            if (applicationType == 'Caseworker') {
-                recordTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByDeveloperName()
-                              .get('Caseworker').getRecordTypeId();
-            } else {
-                recordTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByDeveloperName()
-                              .get('Primary_Contact').getRecordTypeId();
-            }
+            // Get Primary Contact Record Type
+            Id recordTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByDeveloperName()
+                            .get('Primary_Contact').getRecordTypeId();
             
             Contact con = new Contact(
                 Id = contactId,
@@ -112,18 +164,16 @@ public class LeadConversionHandler {
                 Family_Role__c = 'Primary Foster Parent'
             );
             
-            // If this is a Foster Parent, assign a caseworker to the account
-            if (applicationType != 'Caseworker') {
-                Id assignedCaseworkerId = CaseworkerAssignmentService.assignAvailableCaseworker();
-                
-                if (assignedCaseworkerId != null) {
-                    // Create relationship between Account and Caseworker
-                    Account acc = new Account(
-                        Id = accountId,
-                        Primary_Caseworker__c = assignedCaseworkerId
-                    );
-                    update acc;
-                }
+            // Assign a caseworker to the account
+            Id assignedCaseworkerId = CaseworkerAssignmentService.assignAvailableCaseworker();
+            
+            if (assignedCaseworkerId != null) {
+                // Create relationship between Account and Caseworker
+                Account acc = new Account(
+                    Id = accountId,
+                    Primary_Caseworker__c = assignedCaseworkerId
+                );
+                update acc;
             }
             
             update con;
@@ -135,9 +185,7 @@ public class LeadConversionHandler {
             }
             
             // Create portal user for Foster Parent
-            if (applicationType != 'Caseworker') {
-                createPortalUser(contactId);
-            }
+            createPortalUser(contactId);
             
         } catch (Exception e) {
             System.debug('Error updating Contact: ' + e.getMessage());

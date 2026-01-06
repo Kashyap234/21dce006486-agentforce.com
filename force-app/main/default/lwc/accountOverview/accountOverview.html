@@ -48,6 +48,14 @@
                                         <h2 class="slds-card__header-title">Assigned Caseworker</h2>
                                     </div>
                                 </header>
+                                <div class="slds-no-flex">
+                                    <lightning-button 
+                                        variant="neutral" 
+                                        label="Assign/Change" 
+                                        icon-name="utility:edit"
+                                        onclick={handleAssignCaseworker}>
+                                    </lightning-button>
+                                </div>
                             </div>
                             <div class="slds-card__body slds-card__body_inner">
                                 <template if:true={accountOverview.primaryCaseworkerName}>
@@ -252,4 +260,73 @@
             </template>
         </div>
     </lightning-card>
+
+    <!-- Assign Caseworker Modal -->
+    <template if:true={showCaseworkerModal}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                            title="Close" 
+                            onclick={handleCloseCaseworkerModal}>
+                        <lightning-icon icon-name="utility:close" size="small" alternative-text="close"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-modal__title slds-hyphenate">Assign Caseworker</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <template if:true={isLoadingCaseworkers}>
+                        <lightning-spinner alternative-text="Loading caseworkers" size="small"></lightning-spinner>
+                    </template>
+                    
+                    <template if:false={isLoadingCaseworkers}>
+                        <template if:true={availableCaseworkers}>
+                            <lightning-combobox
+                                label="Select Caseworker"
+                                value={selectedCaseworkerId}
+                                placeholder="Choose a caseworker"
+                                options={caseworkerOptions}
+                                onchange={handleCaseworkerSelection}
+                                required>
+                            </lightning-combobox>
+                            
+                            <template if:true={selectedCaseworkerDetails}>
+                                <div class="slds-box slds-theme_shade slds-m-top_medium">
+                                    <h4 class="slds-text-heading_small slds-m-bottom_x-small">Caseworker Details</h4>
+                                    <dl class="slds-list_horizontal slds-wrap">
+                                        <dt class="slds-item_label">Current Case Load:</dt>
+                                        <dd class="slds-item_detail">{selectedCaseworkerDetails.currentCaseLoad} / {selectedCaseworkerDetails.maximumCaseLoad}</dd>
+                                        
+                                        <dt class="slds-item_label">Status:</dt>
+                                        <dd class="slds-item_detail">
+                                            <lightning-badge label={selectedCaseworkerDetails.availabilityStatus}></lightning-badge>
+                                        </dd>
+                                        
+                                        <template if:true={selectedCaseworkerDetails.specialization}>
+                                            <dt class="slds-item_label">Specialization:</dt>
+                                            <dd class="slds-item_detail">{selectedCaseworkerDetails.specialization}</dd>
+                                        </template>
+                                    </dl>
+                                </div>
+                            </template>
+                        </template>
+                    </template>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button 
+                        variant="neutral" 
+                        label="Cancel" 
+                        onclick={handleCloseCaseworkerModal}>
+                    </lightning-button>
+                    <lightning-button 
+                        variant="brand" 
+                        label="Assign" 
+                        onclick={handleSaveCaseworker}
+                        disabled={isSavingCaseworker}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
 </template>
