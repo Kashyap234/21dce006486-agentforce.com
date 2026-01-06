@@ -69,15 +69,29 @@ export default class AccountOverview extends LightningElement {
      * Get caseworker options for combobox
      */
     get caseworkerOptions() {
-        if (!this.availableCaseworkers) return [];
+        console.log('=== COMPUTING CASEWORKER OPTIONS ===');
+        console.log('availableCaseworkers:', this.availableCaseworkers);
+        console.log('availableCaseworkers type:', typeof this.availableCaseworkers);
+        console.log('availableCaseworkers is array:', Array.isArray(this.availableCaseworkers));
         
-        return this.availableCaseworkers.map(cw => {
+        if (!this.availableCaseworkers) {
+            console.log('No availableCaseworkers - returning empty array');
+            return [];
+        }
+        
+        const options = this.availableCaseworkers.map(cw => {
+            console.log('Mapping caseworker:', cw);
             const label = `${cw.name} (${cw.currentCaseLoad}/${cw.maximumCaseLoad}) - ${cw.availabilityStatus}`;
             return {
                 label: label,
                 value: cw.id
             };
         });
+        
+        console.log('Final options:', options);
+        console.log('Number of options:', options.length);
+        
+        return options;
     }
 
     /**
@@ -93,21 +107,47 @@ export default class AccountOverview extends LightningElement {
      * Handle assign caseworker button click
      */
     async handleAssignCaseworker() {
+        console.log('=== ASSIGN CASEWORKER BUTTON CLICKED ===');
+        console.log('Opening modal...');
+        
         this.showCaseworkerModal = true;
         this.isLoadingCaseworkers = true;
         
+        console.log('Modal opened, loading caseworkers...');
+        
         try {
+            console.log('Calling getAvailableCaseworkers...');
             const result = await getAvailableCaseworkers();
+            
+            console.log('Result received:', result);
+            console.log('Number of caseworkers:', result ? result.length : 0);
+            console.log('Caseworkers data:', JSON.stringify(result, null, 2));
+            
             this.availableCaseworkers = result;
+            
+            console.log('availableCaseworkers set to:', this.availableCaseworkers);
+            console.log('caseworkerOptions computed:', this.caseworkerOptions);
             
             // Pre-select current caseworker if exists
             if (this.accountOverview?.primaryCaseworkerId) {
                 this.selectedCaseworkerId = this.accountOverview.primaryCaseworkerId;
+                console.log('Pre-selected caseworker:', this.selectedCaseworkerId);
+            } else {
+                console.log('No current caseworker to pre-select');
             }
+            
+            console.log('Caseworkers loaded successfully!');
         } catch (error) {
+            console.error('=== ERROR LOADING CASEWORKERS ===');
+            console.error('Error object:', error);
+            console.error('Error message:', this.getErrorMessage(error));
+            console.error('Error body:', error.body);
+            console.error('Error stack:', error.stack);
+            
             this.showToast('Error', 'Error loading caseworkers: ' + this.getErrorMessage(error), 'error');
         } finally {
             this.isLoadingCaseworkers = false;
+            console.log('Loading complete. isLoadingCaseworkers:', this.isLoadingCaseworkers);
         }
     }
 

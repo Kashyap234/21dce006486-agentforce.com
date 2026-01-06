@@ -139,8 +139,9 @@ public class CaseworkerAssignmentService {
     /**
      * Get list of available caseworkers with their current workload
      * Used for manual assignment UI
+     * REMOVED cacheable=true to allow imperative calls
      */
-    @AuraEnabled(cacheable=true)
+    @AuraEnabled
     public static List<CaseworkerInfo> getAvailableCaseworkers() {
         try {
             Id caseworkerRecordTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByDeveloperName()
